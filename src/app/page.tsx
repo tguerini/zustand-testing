@@ -35,8 +35,9 @@ export default function Home() {
                 switch (response.status) {
                     case HTTP_STATUS.OK:
                         console.log("Login exitoso");
-                        updateUser({ email, password });
-                        router.push("/tasks");
+                        const data = await response.json();
+                        updateUser({id:data.id, email: data.email, password: data.password });
+                        router.push(`/tasks/${data.id}`);
                         break;
                     case HTTP_STATUS.BAD_REQUEST:
                         alert("Solicitud incorrecta. Verifica los datos ingresados.");
