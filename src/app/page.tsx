@@ -1,103 +1,100 @@
-import Image from "next/image";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+'use client'
+import { userStore } from "@/store/user";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { HTTP_STATUS } from "@/utils/httpStatus";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    const user = userStore((state: any) => state.user)
+    const updateUser = userStore((state: any) => state.updateUser)
+    const router = useRouter();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    useEffect(() => {
+        const unsubscribe = userStore.subscribe(() => {
+            console.log("userStore:", user);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const email = formData.get("email") as string;
+        const password = formData.get("password") as string;
+
+        fetch("http://localhost:3001/users/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+        })
+            .then(async response => {
+                switch (response.status) {
+                    case HTTP_STATUS.OK:
+                        console.log("Login exitoso");
+                        updateUser({ email, password });
+                        router.push("/tasks");
+                        break;
+                    case HTTP_STATUS.BAD_REQUEST:
+                        alert("Solicitud incorrecta. Verifica los datos ingresados.");
+                        break;
+                    case HTTP_STATUS.UNAUTHORIZED:
+                        alert("Credenciales inválidas.");
+                        break;
+                    case HTTP_STATUS.NOT_FOUND:
+                        alert("Usuario no encontrado.");
+                        break;
+                    case HTTP_STATUS.INTERNAL_ERROR:
+                        alert("Error interno del servidor. Intenta más tarde.");
+                        break;
+                    default:
+                        alert("Error desconocido. Código: " + response.status);
+                        break;
+                }
+            })
+            .catch(error => {
+                alert("Error de red: " + error);
+            });
+
+    }
+
+    return (
+        <div className="flex flex-col min-h-screen p-8 pb-20 items-center justify-center bg-blue-900">
+            <div className="flex flex-col h-100 w-100 border-2 p-5 shadow-xl border-blue-900 items-center rounded-xl bg-white">
+                <h1 className="text-xl font-bold text-blue-900">Login</h1>
+                <form className="flex flex-col gap-4 pt-10" onSubmit={handleSubmit}>
+                    <label className="flex flex-col text-blue-900 font-semibold">
+                        Email
+                        <input
+                            name="email"
+                            type="email"
+                            required
+                            className="border border-blue-300 rounded px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Introduce tu email"
+                        />
+                    </label>
+                    <label className="flex flex-col text-blue-900 font-semibold">
+                        Contraseña
+                        <input
+                            type="password"
+                            name="password"
+                            required
+                            className="border border-blue-300 rounded px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Introduce tu contraseña"
+                        />
+                    </label>
+                    <button
+                        type="submit"
+                        className="bg-blue-900 text-white font-bold py-2 px-4 rounded hover:bg-blue-800 transition"
+                    >
+                        Iniciar sesión
+                    </button>
+                </form>
+
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }
